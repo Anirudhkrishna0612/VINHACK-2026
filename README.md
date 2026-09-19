@@ -1,0 +1,2 @@
+# VINHACK-2026
+VINHACK-Hackathon
