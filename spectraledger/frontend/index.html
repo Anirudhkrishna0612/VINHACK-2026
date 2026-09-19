@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SpectraLedger · Capacity Marketplace</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230f172a'/%3E%3Ccircle cx='16' cy='16' r='7' fill='none' stroke='%230d9b76' stroke-width='3'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true"></div>
+        <div>
+          <h1>SpectraLedger <span class="brand-sub">Capacity Marketplace</span></h1>
+          <p class="pitch">Instant burst capacity when you need it &mdash; leased in seconds from idle slice capacity across the network.</p>
+        </div>
+      </div>
+      <div class="svc-status">
+        <span class="svc"><span class="dot" data-svc="ai"></span>AI engine</span>
+        <span class="svc"><span class="dot" data-svc="ledger"></span>Ledger</span>
+      </div>
+    </div>
+    <nav class="tabs" role="tablist">
+      <button class="tab active" data-tab="ledger" role="tab">Ledger &amp; Revenue</button>
+      <button class="tab" data-tab="market" role="tab">Live Market</button>
+      <button class="tab" data-tab="book" role="tab">Order Book</button>
+      <button class="tab" data-tab="negotiate" role="tab">Negotiation</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- ============ PANEL 1: LEDGER / REVENUE ============ -->
+    <section id="tab-ledger" class="panel active">
+      <div class="panel-head">
+        <h2>Settlement ledger <span class="dot" data-svc="ledger"></span></h2>
+        <span id="integrity" class="badge badge-muted">checking ledger&hellip;</span>
+      </div>
+
+      <div class="kpis">
+        <div class="card kpi hero">
+          <div class="kpi-label">Platform fees collected</div>
+          <div class="kpi-value" id="kpi-fees">$0.00</div>
+          <div class="kpi-note" id="kpi-fee-note">2% of every settled trade &mdash; how the marketplace earns.</div>
+        </div>
+        <div class="card kpi">
+          <div class="kpi-label">Trades settled</div>
+          <div class="kpi-value" id="kpi-count">0</div>
+          <div class="kpi-note">final, immutable, double-entry</div>
+        </div>
+        <div class="card kpi">
+          <div class="kpi-label">Total volume</div>
+          <div class="kpi-value" id="kpi-volume">$0.00</div>
+          <div class="kpi-note">gross value leased</div>
+        </div>
+        <div class="card kpi">
+          <div class="kpi-label">Capacity leased</div>
+          <div class="kpi-value" id="kpi-mbps">0 <span class="unit">Mbps</span></div>
+          <div class="kpi-note">cumulative burst capacity</div>
+        </div>
+      </div>
+
+      <div class="grid-3-1">
+        <div class="card">
+          <div class="card-head"><h3>Settled trades</h3><span class="muted small" id="trades-meta"></span></div>
+          <div class="table-wrap">
+            <table class="data" id="trades-table">
+              <thead><tr>
+                <th>Settled</th><th>Trade</th><th>Buyer &rarr; Seller</th>
+                <th class="num">Mbps</th><th class="num">Price</th><th class="num">Gross</th>
+                <th class="num fee-col">Platform fee</th><th class="num">Net to seller</th>
+              </tr></thead>
+              <tbody id="trades-body"><tr><td colspan="8" class="empty">Waiting for the first settled trade&hellip;</td></tr></tbody>
+            </table>
+          </div>
+          <div class="pager">
+            <button class="btn ghost" id="pg-prev">&larr; Newer</button>
+            <span class="muted small" id="pg-info"></span>
+            <button class="btn ghost" id="pg-next">Older &rarr;</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h3>Look up a slice</h3></div>
+          <form id="lookup-form" class="row">
+            <input id="lookup-input" list="slice-list" placeholder="e.g. slice-ai-01" autocomplete="off" aria-label="Slice id">
+            <datalist id="slice-list"></datalist>
+            <button class="btn primary" type="submit">Look up</button>
+          </form>
+          <div id="lookup-result" class="lookup-result muted">Enter a slice to see its balance and ledger history.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ PANEL 2: LIVE MARKET ============ -->
+    <section id="tab-market" class="panel">
+      <div class="panel-head">
+        <h2>Live market <span class="dot" data-svc="ai"></span></h2>
+        <span id="ws-status" class="badge badge-muted">connecting&hellip;</span>
+      </div>
+      <div id="slice-grid" class="slice-grid"></div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-head"><h3>Live decisions</h3><span class="muted small">agents re-evaluate every ~8s &middot; reasoning shown inline</span></div>
+          <div id="decision-feed" class="feed"><div class="empty">Waiting for agent decisions&hellip;</div></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h3>Trades ticker</h3><span class="muted small">cleared by the engine</span></div>
+          <div id="trade-ticker" class="feed"><div class="empty">No trades cleared yet&hellip;</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ PANEL 3: ORDER BOOK ============ -->
+    <section id="tab-book" class="panel">
+      <div class="panel-head">
+        <h2>Order book <span class="dot" data-svc="ai"></span></h2>
+        <span id="book-spread" class="badge badge-muted">&mdash;</span>
+      </div>
+      <div class="grid-2-1">
+        <div class="card">
+          <div class="depth">
+            <div class="depth-col">
+              <div class="depth-title bid-text">Bids &middot; buyers needing capacity</div>
+              <table class="data depth-table bids"><thead><tr><th class="num">Mbps</th><th>Slice</th><th class="num">Bid $/Mbps</th></tr></thead><tbody id="bids-body"></tbody></table>
+            </div>
+            <div class="depth-mid"></div>
+            <div class="depth-col">
+              <div class="depth-title ask-text">Asks &middot; idle capacity offered</div>
+              <table class="data depth-table asks"><thead><tr><th class="num">Ask $/Mbps</th><th>Slice</th><th class="num">Mbps</th></tr></thead><tbody id="asks-body"></tbody></table>
+            </div>
+          </div>
+          <p class="muted small footnote">Best prices sit at the centre. Trades clear at the midpoint of a crossing bid and ask. Agent quotes refresh each tick; orders you submit stay until matched or cancelled.</p>
+        </div>
+        <div class="card">
+          <div class="card-head"><h3>Submit an order</h3></div>
+          <form id="order-form" class="stack">
+            <label>Slice<select id="order-slice"></select></label>
+            <label>Side
+              <select id="order-side">
+                <option value="bid">Bid &mdash; I need burst capacity</option>
+                <option value="ask">Ask &mdash; I have idle capacity</option>
+              </select>
+            </label>
+            <label>Price ($ per Mbps, 15-min block)<input id="order-price" type="number" step="0.0001" min="0.0001" value="0.5000" required></label>
+            <label>Quantity (Mbps)<input id="order-qty" type="number" step="0.1" min="0.1" value="40" required></label>
+            <button class="btn primary" type="submit">Submit order</button>
+            <div id="order-msg" class="small muted" role="status"></div>
+          </form>
+          <p class="muted small footnote">Tip: submit a generous bid and watch the autonomous engine match it against a resting ask within one tick.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ PANEL 4: NEGOTIATION ============ -->
+    <section id="tab-negotiate" class="panel">
+      <div class="panel-head">
+        <h2>Agent negotiation <span class="dot" data-svc="ai"></span></h2>
+        <span class="muted small">real seller &amp; buyer agents narrow the gap by bisection, up to 4 rounds</span>
+      </div>
+      <div class="grid-2-1">
+        <div class="card">
+          <div class="neg-stage">
+            <div class="neg-legend"><span class="key ask-key"></span>Seller ask <span class="key bid-key"></span>Buyer bid <span class="key deal-key"></span>Agreed price</div>
+            <div class="neg-track" id="neg-track">
+              <div class="neg-marker ask" id="mk-ask"><span>&mdash;</span></div>
+              <div class="neg-marker bid" id="mk-bid"><span>&mdash;</span></div>
+              <div class="neg-marker deal" id="mk-deal"><span>&mdash;</span></div>
+            </div>
+            <div id="neg-outcome" class="neg-outcome muted">Choose a seller and a buyer, then start the negotiation.</div>
+          </div>
+          <div class="table-wrap">
+            <table class="data" id="neg-table">
+              <thead><tr><th>Round</th><th class="num">Seller ask</th><th class="num">Buyer bid</th><th class="num">Gap</th><th>What happened</th></tr></thead>
+              <tbody id="neg-body"></tbody>
+            </table>
+          </div>
+          <div id="neg-notes" class="small muted footnote"></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h3>Set up a negotiation</h3></div>
+          <form id="neg-form" class="stack">
+            <label>Seller slice (idle capacity)<select id="neg-seller"></select></label>
+            <label>Buyer slice (needs burst)<select id="neg-buyer"></select></label>
+            <label>Quantity (Mbps, optional)<input id="neg-qty" type="number" step="1" min="1" placeholder="auto"></label>
+            <label class="check"><input id="neg-exec" type="checkbox"> Settle the agreed deal as a real trade</label>
+            <button class="btn primary" type="submit" id="neg-run">Negotiate</button>
+            <div id="neg-msg" class="small muted" role="status"></div>
+          </form>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    Leases unused capacity inside network slices each enterprise is already authorized to operate &mdash; structurally like reselling wholesale bandwidth, not licensed airwaves.
+  </footer>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
